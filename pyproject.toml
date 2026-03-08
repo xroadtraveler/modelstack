@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modelstack"
+version = "0.1.0"
+description = "PyQt6 GUI tool for managing RunPod AI model deployments"
+requires-python = ">=3.11"
+dependencies = [
+    "PyQt6>=6.6.0",
+    "paramiko>=3.4.0",
+    "PyYAML>=6.0.1",
+]
+
+[project.scripts]
+modelstack = "modelstack.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
