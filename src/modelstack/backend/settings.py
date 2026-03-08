@@ -26,11 +26,17 @@ class SettingsManager:
 
     def __init__(self, settings_path: Path = None):
 
-        # [001] set path with platform default
+        # [001] set path with platform-appropriate default
         if settings_path is None:
-            settings_path = (
-                Path.home() / "AppData" / "Roaming" / "ModelStack" / "settings.json"
-            )
+            import platform
+            if platform.system() == "Windows":
+                settings_path = (
+                    Path.home() / "AppData" / "Roaming" / "ModelStack" / "settings.json"
+                )
+            else:
+                settings_path = (
+                    Path.home() / ".config" / "ModelStack" / "settings.json"
+                )
         self.settings_path = settings_path
         self._data: dict[str, Any] = {}
         # [-----END [001]-----]

@@ -46,6 +46,7 @@ class ModelPanel(QWidget):
         self.model_list = QListWidget()
         model_layout.addWidget(self.model_list)
 
+        self.model_list.currentItemChanged.connect(self._on_model_changed)
         layout.addWidget(model_group)
         # [-----END [002]-----]
 
@@ -108,6 +109,22 @@ class ModelPanel(QWidget):
     # [-----END [030]-----]
 
 
+    # [035] Method intent: handle model selection change
+
+    def _on_model_changed(self, current: QListWidgetItem, previous: QListWidgetItem) -> None:
+
+        # [001] update parameter spinboxes from stored model data
+        if current is None:
+            return
+        model_data = current.data(257)
+        if model_data:
+            self.max_len_spin.setValue(model_data.get("max_model_len", 16000))
+            self.gpu_mem_spin.setValue(model_data.get("gpu_memory_utilization", 0.9))
+        # [-----END [001]-----]
+
+    # [-----END [035]-----]
+
+
     # [040] Method intent: populate model list from settings
 
     def load_models(self, models: dict) -> None:
@@ -118,6 +135,7 @@ class ModelPanel(QWidget):
             local_dir = model_info.get("local_dir", model_id)
             item = QListWidgetItem(model_id)
             item.setData(256, local_dir)
+            item.setData(257, model_info)
             self.model_list.addItem(item)
         # [-----END [001]-----]
 
