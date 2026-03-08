@@ -1,29 +1,20 @@
-# [10000] Beacon intent: SSH connection panel widget
+# [10000] Beacon intent: Scrolling log output panel
 
 from PyQt6.QtWidgets import (
     QWidget,
-    QHBoxLayout,
     QVBoxLayout,
     QLabel,
-    QLineEdit,
+    QTextEdit,
     QPushButton,
+    QHBoxLayout,
 )
-from PyQt6.QtCore import pyqtSignal
 
 
-# [100] Subsystem intent: connection panel UI and signals
+# [100] Subsystem intent: log display widget
 
-class ConnectionPanel(QWidget):
+class LogPanel(QWidget):
 
-    # [010] Class-level intent: define signals
-
-    connect_requested = pyqtSignal(str)
-    disconnect_requested = pyqtSignal()
-
-    # [-----END [010]-----]
-
-
-    # [020] Method intent: initialize panel layout
+    # [010] Method intent: initialize log panel layout
 
     def __init__(self):
         super().__init__()
@@ -33,78 +24,47 @@ class ConnectionPanel(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
         # [-----END [001]-----]
 
-        # [002] create label
-        label = QLabel("SSH Connection String:")
-        layout.addWidget(label)
+        # [002] create header row with label and clear button
+        header = QHBoxLayout()
+        header.addWidget(QLabel("Log Output:"))
+        header.addStretch()
+        clear_btn = QPushButton("Clear")
+        clear_btn.clicked.connect(self._on_clear)
+        header.addWidget(clear_btn)
+        layout.addLayout(header)
         # [-----END [002]-----]
 
-        # [003] create input row with textbox and buttons
-        input_row = QHBoxLayout()
-
-        self.ssh_input = QLineEdit()
-        self.ssh_input.setPlaceholderText("ssh <pod-id>@ssh.runpod.io -i ~/.ssh/id_ed25519")
-        input_row.addWidget(self.ssh_input, stretch=1)
-
-        self.connect_btn = QPushButton("Connect")
-        self.connect_btn.clicked.connect(self._on_connect_clicked)
-        input_row.addWidget(self.connect_btn)
-
-        self.disconnect_btn = QPushButton("Disconnect")
-        self.disconnect_btn.clicked.connect(self._on_disconnect_clicked)
-        self.disconnect_btn.setEnabled(False)
-        input_row.addWidget(self.disconnect_btn)
-
-        layout.addLayout(input_row)
+        # [003] create scrolling text area
+        self.log_area = QTextEdit()
+        self.log_area.setReadOnly(True)
+        self.log_area.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
+        layout.addWidget(self.log_area)
         # [-----END [003]-----]
 
-        # [004] create status indicator
-        self.status_label = QLabel("Status: Disconnected")
-        layout.addWidget(self.status_label)
-        # [-----END [004]-----]
+    # [-----END [010]-----]
+
+
+    # [020] Method intent: append text to log
+
+    def append_log(self, text: str) -> None:
+
+        # [001] append and scroll to bottom
+        self.log_area.append(text.rstrip())
+        scrollbar = self.log_area.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+        # [-----END [001]-----]
 
     # [-----END [020]-----]
 
 
-    # [030] Method intent: handle connect button click
+    # [030] Method intent: clear log contents
 
-    def _on_connect_clicked(self) -> None:
+    def _on_clear(self) -> None:
 
-        # [001] emit signal with SSH string
-        ssh_string = self.ssh_input.text().strip()
-        if ssh_string:
-            self.connect_requested.emit(ssh_string)
+        # [001] clear text area
+        self.log_area.clear()
         # [-----END [001]-----]
 
     # [-----END [030]-----]
-
-
-    # [040] Method intent: handle disconnect button click
-
-    def _on_disconnect_clicked(self) -> None:
-
-        # [001] emit disconnect signal
-        self.disconnect_requested.emit()
-        # [-----END [001]-----]
-
-    # [-----END [040]-----]
-
-
-    # [050] Method intent: update UI to reflect connection state
-
-    def set_connected(self, connected: bool) -> None:
-
-        # [001] toggle buttons and status text
-        self.connect_btn.setEnabled(not connected)
-        self.disconnect_btn.setEnabled(connected)
-        self.ssh_input.setEnabled(not connected)
-        if connected:
-            self.status_label.setText("Status: Connected")
-            self.status_label.setStyleSheet("color: green;")
-        else:
-            self.status_label.setText("Status: Disconnected")
-            self.status_label.setStyleSheet("color: red;")
-        # [-----END [001]-----]
-
-    # [-----END [050]-----]
 
 # [-----END [100]-----]

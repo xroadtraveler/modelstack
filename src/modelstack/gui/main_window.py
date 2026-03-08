@@ -209,6 +209,19 @@ class MainWindow(QMainWindow):
     # [-----END [090]-----]
 
 
+    # [095] Method intent: handle cloudflared stop
+
+    def _on_stop_tunnel(self) -> None:
+
+        # [001] stop tunnel and update UI
+        self.cloudflared.stop()
+        self.log_panel.append_log("cloudflared stopped.")
+        self.service_panel.set_tunnel_running(False)
+        # [-----END [001]-----]
+
+    # [-----END [095]-----]
+
+
     # [100] Method intent: handle tunnel URL captured
 
     def _on_tunnel_url(self, url: str) -> None:
