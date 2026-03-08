@@ -18,7 +18,7 @@ class ServicePanel(QWidget):
 
     # [010] Class-level intent: define signals
 
-    start_vllm_requested = pyqtSignal(str, int, float)
+    start_vllm_requested = pyqtSignal()
     stop_vllm_requested = pyqtSignal()
     start_tunnel_requested = pyqtSignal()
     stop_tunnel_requested = pyqtSignal()

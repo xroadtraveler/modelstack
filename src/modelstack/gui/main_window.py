@@ -1,5 +1,7 @@
 # [10000] Beacon intent: Main application window
 
+from pathlib import Path
+
 from PyQt6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
@@ -13,6 +15,7 @@ from modelstack.backend.ssh_manager import SSHManager
 from modelstack.backend.preflight import PreflightChecker
 from modelstack.backend.services import VLLMService, CloudflaredService
 from modelstack.backend.continue_config import ContinueConfig
+from modelstack.backend.settings import SettingsManager
 from modelstack.gui.connection_panel import ConnectionPanel
 from modelstack.gui.model_panel import ModelPanel
 from modelstack.gui.service_panel import ServicePanel
@@ -34,11 +37,17 @@ class MainWindow(QMainWindow):
         # [-----END [001]-----]
 
         # [002] initialize backend services
+        self.settings = SettingsManager()
+        self.settings.load()
         self.ssh = SSHManager()
         self.preflight = PreflightChecker(self.ssh)
         self.vllm = VLLMService(self.ssh)
         self.cloudflared = CloudflaredService(self.ssh)
-        self.continue_config = ContinueConfig()
+        continue_path = self.settings.get("continue_config_path")
+        if continue_path:
+            self.continue_config = ContinueConfig(Path(continue_path))
+        else:
+            self.continue_config = ContinueConfig()
         # [-----END [002]-----]
 
         # [003] build UI layout
@@ -48,6 +57,10 @@ class MainWindow(QMainWindow):
         # [004] connect panel signals to backend logic
         self._connect_signals()
         # [-----END [004]-----]
+
+        # [005] load settings into UI
+        self._load_settings()
+        # [-----END [005]-----]
 
     # [-----END [010]-----]
 
@@ -116,6 +129,24 @@ class MainWindow(QMainWindow):
     # [-----END [030]-----]
 
 
+    # [035] Method intent: populate UI from saved settings
+
+    def _load_settings(self) -> None:
+
+        # [001] load models into model panel
+        models = self.settings.get("models", {})
+        self.model_panel.load_models(models)
+        # [-----END [001]-----]
+
+        # [002] restore last SSH string
+        last_ssh = self.settings.get("ssh_connection_string", "")
+        if last_ssh:
+            self.connection_panel.ssh_input.setText(last_ssh)
+        # [-----END [002]-----]
+
+    # [-----END [035]-----]
+
+
     # [040] Method intent: handle SSH connect
 
     def _on_connect(self, ssh_string: str) -> None:
@@ -125,6 +156,7 @@ class MainWindow(QMainWindow):
             self.ssh.connect(ssh_string)
             self.log_panel.append_log("SSH connected.")
             self.connection_panel.set_connected(True)
+            self.settings.set("ssh_connection_string", ssh_string)
         except Exception as e:
             self.log_panel.append_log(f"SSH connection failed: {e}")
             self.connection_panel.set_connected(False)
@@ -151,9 +183,16 @@ class MainWindow(QMainWindow):
 
     # [060] Method intent: handle vLLM start
 
-    def _on_start_vllm(self, model_dir: str, max_model_len: int, gpu_mem: float) -> None:
+    def _on_start_vllm(self) -> None:
 
-        # [001] start vLLM with callbacks to log panel
+        # [001] get selected model from model panel
+        model_dir, max_model_len, gpu_mem = self.model_panel.get_selected_model()
+        if not model_dir:
+            self.log_panel.append_log("Error: No model selected.")
+            return
+        # [-----END [001]-----]
+
+        # [002] start vLLM with callbacks to log panel
         self.log_panel.append_log(f"Starting vLLM with /workspace/{model_dir}...")
         self.vllm.start(
             model_dir=model_dir,
@@ -163,7 +202,11 @@ class MainWindow(QMainWindow):
             on_ready=lambda: self._on_vllm_ready(),
             on_exit=lambda code: self.log_panel.append_log(f"vLLM exited with code {code}"),
         )
-        # [-----END [001]-----]
+        # [-----END [002]-----]
+
+        # [003] save last used model
+        self.settings.set("last_used_model", model_dir)
+        # [-----END [003]-----]
 
     # [-----END [060]-----]
 
